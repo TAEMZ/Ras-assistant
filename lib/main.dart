@@ -1226,24 +1226,16 @@ class _RasMainScreenState extends State<RasMainScreen>
               children: [
                 // Drawer Header
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0x16FFFFFF),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0x26FFFFFF), width: 0.6),
-                        ),
-                        child: const Text(
-                          'RAS ASSISTANT',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.5,
-                            color: Color(0xFFCBD5E1),
-                          ),
+                      const Text(
+                        'Chat',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                          color: Color(0xFFF1F5F9),
                         ),
                       ),
                       const Spacer(),
@@ -1404,24 +1396,36 @@ class _RasMainScreenState extends State<RasMainScreen>
         alignment: Alignment.centerRight,
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           constraints: const BoxConstraints(maxWidth: 290),
           decoration: BoxDecoration(
-            color: const Color(0x2EFFFFFF),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF2C3240), Color(0xFF1D222D)],
+            ),
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-              bottomLeft: Radius.circular(16),
+              topLeft: Radius.circular(18),
+              topRight: Radius.circular(18),
+              bottomLeft: Radius.circular(18),
               bottomRight: Radius.circular(4),
             ),
-            border: Border.all(color: const Color(0x33FFFFFF), width: 0.6),
+            border: Border.all(color: const Color(0x38FFFFFF), width: 0.8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Text(
             msg.text,
             style: const TextStyle(
-              fontSize: 14,
-              height: 1.35,
+              fontSize: 14.5,
+              height: 1.4,
               fontWeight: FontWeight.w500,
+              letterSpacing: 0.1,
               color: Color(0xFFF8FAFC),
             ),
           ),
@@ -1433,17 +1437,28 @@ class _RasMainScreenState extends State<RasMainScreen>
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         constraints: const BoxConstraints(maxWidth: 320),
         decoration: BoxDecoration(
-          color: const Color(0x14FFFFFF),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF191D26), Color(0xFF11131A)],
+          ),
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
-            topRight: Radius.circular(16),
-            bottomLeft: Radius.circular(16),
-            bottomRight: Radius.circular(16),
+            topRight: Radius.circular(18),
+            bottomLeft: Radius.circular(18),
+            bottomRight: Radius.circular(18),
           ),
-          border: Border.all(color: const Color(0x22FFFFFF), width: 0.6),
+          border: Border.all(color: const Color(0x28FFFFFF), width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1451,9 +1466,9 @@ class _RasMainScreenState extends State<RasMainScreen>
             Text(
               msg.text,
               style: const TextStyle(
-                fontSize: 14,
-                height: 1.35,
-                fontWeight: FontWeight.w500,
+                fontSize: 14.5,
+                height: 1.42,
+                fontWeight: FontWeight.w400,
                 color: Color(0xFFE2E8F0),
               ),
             ),

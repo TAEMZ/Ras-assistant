@@ -190,6 +190,15 @@ CONVERSATIONAL RULES:
           rawData: execResult.rawData,
         );
       }
+
+      // GREETING FAST PATH: If user prompt is a greeting or pleasantry, answer immediately!
+      // This eliminates 40-90s model runner latency and prevents raw JSON outputs.
+      final greetingReply = _checkGreetingFastPath(userPrompt);
+      if (greetingReply != null) {
+        debugPrint('[FastPathGreeting] Instantly responding to greeting: "$userPrompt" -> "$greetingReply"');
+        return ChatTurnResult(textResponse: greetingReply);
+      }
+
       final now = DateTime.now();
       final time24 = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       final period = now.hour >= 12 ? 'PM' : 'AM';
@@ -223,9 +232,11 @@ $_systemPrompt
 
       McpToolExecutionResult? toolCall = _parseToolCall(firstRaw);
 
-
       if (toolCall == null || toolCall.toolName == null) {
         // Direct conversational answer
+        if (toolCall != null && toolCall.displayText.isNotEmpty && !toolCall.displayText.startsWith('{')) {
+          return ChatTurnResult(textResponse: toolCall.displayText);
+        }
         final clean = _cleanModelOutput(firstRaw);
         return ChatTurnResult(textResponse: clean);
       }
@@ -417,7 +428,7 @@ $_systemPrompt
     return null;
   }
 
-  /// Strips formatting tags and special tokens
+  /// Strips formatting tags, special tokens, and unwraps JSON objects to plain text
   String _cleanModelOutput(String raw) {
     String clean = raw
         .replaceAll(RegExp(r'<tool_call>[\s\S]*?<\/tool_call>'), '')
@@ -429,7 +440,65 @@ $_systemPrompt
     if (userIdx != -1) {
       clean = clean.substring(0, userIdx);
     }
-    return clean.trim();
+    clean = clean.trim();
+
+    // JSON CLEANUP: If the model emitted a JSON payload instead of plain text, extract the human text
+    if (clean.startsWith('{') && clean.endsWith('}')) {
+      try {
+        final decoded = jsonDecode(clean);
+        if (decoded is Map<String, dynamic>) {
+          if (decoded.containsKey('arguments') && decoded['arguments'] is Map) {
+            final args = decoded['arguments'] as Map;
+            final text = args['text'] ?? args['query'] ?? args['message'];
+            if (text != null && text.toString().trim().isNotEmpty) {
+              return text.toString().trim();
+            }
+          }
+          final text = decoded['text'] ?? decoded['message'] ?? decoded['response'] ?? decoded['content'];
+          if (text != null && text.toString().trim().isNotEmpty) {
+            return text.toString().trim();
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Regex fallback if JSON was malformed or partial
+    if (clean.startsWith('{')) {
+      final textMatch = RegExp(r'"(?:text|message|response|content|query)"\s*:\s*"([^"]+)"').firstMatch(clean);
+      if (textMatch != null) {
+        return textMatch.group(1)!.trim();
+      }
+      // If it's a raw tool call dump like {"tool": ...} that couldn't be parsed
+      if (clean.contains('"tool"')) {
+        return 'ሰላም! እንዴት ልርዳዎት?';
+      }
+    }
+
+    return clean;
+  }
+
+  /// Returns a clean instant greeting if user prompt is a greeting or pleasantry
+  String? _checkGreetingFastPath(String prompt) {
+    final p = prompt.trim().toLowerCase();
+
+    // English greetings
+    final englishGreeting = RegExp(r'^(hi|hello|hey|hey\s+there|hello\s+there|good\s+(morning|afternoon|evening|day)|greetings|howdy|sup|yo)[\s!.,?]*$').hasMatch(p);
+    if (englishGreeting) {
+      return 'Hello! How can I help you today?';
+    }
+
+    final englishAssistance = RegExp(r'^(how\s+are\s+you|who\s+are\s+you|what\s+can\s+you\s+do)[\s!.,?]*$').hasMatch(p);
+    if (englishAssistance) {
+      return 'I am your on-device personal assistant. I can open apps, search files, set alarms, play music, and answer questions.';
+    }
+
+    // Amharic greetings & pleasantries
+    final amharicGreeting = RegExp(r'^(ሰላም|ሰላምታ|ሰላም\s*ነው|እንዴት\s*(ነህ|ነሽ|ኖት|ናችሁ)|እንደምን\s*(አለህ|አለሽ|አሉ|አደሩ|አደርክ|አደርሽ|ዋሉ|ዋልክ|ዋልሽ)|ታዲያስ|ጤና\s*ይስጥልኝ)[\s!.,?፣፤]*$').hasMatch(p);
+    if (amharicGreeting) {
+      return 'ሰላም! እንዴት ልርዳዎት? ምን ማድረግ እችላለሁ?';
+    }
+
+    return null;
   }
 
   /// Classifies whether the raw user prompt is a music playback request.
@@ -477,16 +546,6 @@ $_systemPrompt
     q = q.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (q.isEmpty) q = prompt.trim();
     return q;
-  }
-
-  /// Detects when model arguments lost most of the prompt's content
-  bool _argumentsLostContent(Map<String, dynamic> args, String prompt) {
-    final query = (args['query'] ?? '').toString().toLowerCase();
-    if (query.isEmpty) return true;
-    final promptWords = prompt.toLowerCase().split(RegExp(r'\s+')).where((w) => RegExp(r'[a-zA-Z0-9\u1200-\u137F]').hasMatch(w) && !RegExp(r'^(play|open|ope|music|song|called|the|on)$').hasMatch(w));
-    final queryWords = query.split(RegExp(r'\s+')).toSet();
-    final lost = promptWords.where((w) => !queryWords.contains(w)).length;
-    return lost > 0 && lost >= promptWords.length ~/ 2;
   }
 
   /// Checks if the prompt explicitly requests YouTube
